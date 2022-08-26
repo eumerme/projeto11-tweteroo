@@ -23,4 +23,8 @@ app.post('/tweets', (req, res) => {
     res.send(tweets);
 });
 
+app.get('/tweets', (req, res) => {
+    res.send(tweets.slice(-10).reverse());
+});
+
 app.listen(5000, () => console.log('Listening on 5000'));
