@@ -5,26 +5,54 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-let user = {};
+const users = [];
 const tweets = [];
 
 app.post('/sign-up', (req, res) => {
-    const userInfo = req.body;
-    user = { ...userInfo };
-    res.send(user);
+    const { username, avatar } = req.body;
+    const usernameExists = users.some(user => user.username === username);
+
+    if (usernameExists) {
+        return res.status(400).send({ error: 'Nome de usuário já cadastrado!' });
+    };
+
+    if (!username || !avatar) {
+        return res.status(400).send({ error: 'Todos os campos são obrigatórios!' });
+    };
+
+    users.push({
+        username,
+        avatar
+    });
+
+    res.status(201).send(users);
 });
 
 app.post('/tweets', (req, res) => {
-    const tweet = req.body;
+    const { username, tweet } = req.body;
+    const userpic = users.find(user => user.username === username);
+
+    if (!username || !tweet) {
+        return res.status(400).send({ error: 'Todos os campos são obrigatórios!' });
+    };
+
     tweets.push({
-        ...tweet,
-        avatar: user.avatar,
+        username,
+        avatar: userpic.avatar,
+        tweet
     });
-    res.send(tweets);
+
+    res.status(201).send(tweets);
 });
 
 app.get('/tweets', (req, res) => {
     res.send(tweets.slice(-10).reverse());
+});
+
+app.get('/tweets/:username', (req, res) => {
+    const { username } = req.params;
+    const userTweets = tweets.filter(userTweets => userTweets.username === username);
+    res.send(userTweets);
 });
 
 app.listen(5000, () => console.log('Listening on 5000'));
