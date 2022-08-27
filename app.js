@@ -7,17 +7,20 @@ app.use(express.json());
 
 const users = [];
 const tweets = [];
+let currentPage = 1;
+let minLoad = 0;
+let maxLoad = 10;
 
 app.post('/sign-up', (req, res) => {
     const { username, avatar } = req.body;
     const usernameExists = users.some(user => user.username === username);
 
     if (usernameExists) {
-        return res.status(400).send({ error: 'Nome de usuário já cadastrado!' });
+        return res.status(400).send('Nome de usuário já cadastrado!');
     };
 
     if (!username || !avatar) {
-        return res.status(400).send({ error: 'Todos os campos são obrigatórios!' });
+        return res.status(400).send('Todos os campos são obrigatórios!');
     };
 
     users.push({
@@ -29,14 +32,15 @@ app.post('/sign-up', (req, res) => {
 });
 
 app.post('/tweets', (req, res) => {
-    const { username, tweet } = req.body;
+    const { user: username } = req.headers;
+    const { tweet } = req.body;
     const userpic = users.find(user => user.username === username);
 
     if (!username || !tweet) {
-        return res.status(400).send({ error: 'Todos os campos são obrigatórios!' });
+        return res.status(400).send('Todos os campos são obrigatórios!');
     };
 
-    tweets.push({
+    tweets.unshift({
         username,
         avatar: userpic.avatar,
         tweet
@@ -46,7 +50,24 @@ app.post('/tweets', (req, res) => {
 });
 
 app.get('/tweets', (req, res) => {
-    res.send(tweets.slice(-10).reverse());
+    const page = Number(req.query.page);
+
+    if (!page || page < 1) {
+        return res.status(400).send('Informe uma página válida!');
+    };
+
+    if (currentPage !== page) {
+        currentPage = page;
+        minLoad += 10;
+        maxLoad += 10;
+    };
+
+    if (page === 1) {
+        minLoad = 0;
+        maxLoad = 10;
+    };
+
+    res.send(tweets.slice(minLoad, maxLoad));
 });
 
 app.get('/tweets/:username', (req, res) => {
