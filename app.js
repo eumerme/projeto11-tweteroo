@@ -14,9 +14,14 @@ let maxLoad = 10;
 app.post('/sign-up', (req, res) => {
     const { username, avatar } = req.body;
     const usernameExists = users.some(user => user.username === username);
+    const validAvatar = avatar.substring(0, 7) === "http://" || avatar.substring(0, 8) === "https://";
 
     if (usernameExists) {
         return res.status(400).send('Nome de usuário já cadastrado!');
+    };
+
+    if(!validAvatar) {
+        return res.status(401).send('Informe uma imagem válida!');
     };
 
     if (!username || !avatar) {
@@ -34,7 +39,7 @@ app.post('/sign-up', (req, res) => {
 app.post('/tweets', (req, res) => {
     const { user: username } = req.headers;
     const { tweet } = req.body;
-    const userpic = users.find(user => user.username === username);
+    const _user = users.find(user => user.username === username);
 
     if (!username || !tweet) {
         return res.status(400).send('Todos os campos são obrigatórios!');
@@ -42,7 +47,7 @@ app.post('/tweets', (req, res) => {
 
     tweets.unshift({
         username,
-        avatar: userpic.avatar,
+        avatar: _user.avatar,
         tweet
     });
 
@@ -72,8 +77,7 @@ app.get('/tweets', (req, res) => {
 
 app.get('/tweets/:username', (req, res) => {
     const { username } = req.params;
-    const userTweets = tweets.filter(userTweets => userTweets.username === username);
-    res.send(userTweets);
+    res.send(tweets.filter(userTweets => userTweets.username === username));
 });
 
 app.listen(5000, () => console.log('Listening on 5000'));
