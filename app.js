@@ -7,26 +7,23 @@ app.use(express.json());
 
 const users = [];
 const tweets = [];
-let currentPage = 1;
-let minLoad = 0;
-let maxLoad = 10;
 
 app.post('/sign-up', (req, res) => {
     const { username, avatar } = req.body;
     const usernameExists = users.some(user => user.username === username);
-    const validAvatar = avatar.substring(0, 7) === "http://" || avatar.substring(0, 8) === "https://";
-
-    if (usernameExists) {
-        return res.status(400).send('Nome de usuário já cadastrado!');
-    };
-
-    if(!validAvatar) {
-        return res.status(401).send('Informe uma imagem válida!');
-    };
+    const validAvatar = avatar.startsWith('http://') || avatar.startsWith('https://');
 
     if (!username || !avatar) {
         return res.status(400).send('Todos os campos são obrigatórios!');
-    };
+    }
+
+    if (usernameExists) {
+        return res.status(400).send('Nome de usuário já cadastrado!');
+    }
+
+    if (!validAvatar) {
+        return res.status(401).send('Informe uma imagem válida!');
+    }
 
     users.push({
         username,
@@ -39,15 +36,18 @@ app.post('/sign-up', (req, res) => {
 app.post('/tweets', (req, res) => {
     const { user: username } = req.headers;
     const { tweet } = req.body;
-    const _user = users.find(user => user.username === username);
-
+    const userValidation = users.some(user => user.username === username);
+    
     if (!username || !tweet) {
         return res.status(400).send('Todos os campos são obrigatórios!');
-    };
+    }
+
+    if(!userValidation) {
+        return res.status(400).send('Usuário não cadastrado!');
+    }
 
     tweets.unshift({
         username,
-        avatar: _user.avatar,
         tweet
     });
 
@@ -56,21 +56,19 @@ app.post('/tweets', (req, res) => {
 
 app.get('/tweets', (req, res) => {
     const page = Number(req.query.page);
-
+    
     if (!page || page < 1) {
         return res.status(400).send('Informe uma página válida!');
-    };
+    }
 
-    if (currentPage !== page) {
-        currentPage = page;
-        minLoad += 10;
-        maxLoad += 10;
-    };
+    const limit = 10;
+    const minLoad = (page - 1) * limit;
+    const maxLoad = page * limit;
 
-    if (page === 1) {
-        minLoad = 0;
-        maxLoad = 10;
-    };
+    tweets.forEach(tweet => {
+        const { avatar } = users.find(user => user.username === tweet.username);
+        tweet.avatar = avatar;
+    });
 
     res.send(tweets.slice(minLoad, maxLoad));
 });
